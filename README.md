@@ -1,5 +1,9 @@
 # Monoyan 🌸
 
+<p align="center">
+  <img src="https://cdn.discordapp.com/attachments/1498437660690354176/1498438151155355820/monoyan_logo_1.png?ex=69f128c6&is=69efd746&hm=d705a512ecae17a531d59dae586ae2712739c3defe94432203a0a718941340b7&" alt="Monoyan Logo" width="200"/>
+</p>
+
 **Monoyan** is a high-performance, kernel-synchronized C++ Mono Injector solution. It utilizes a dual-project architecture to provide secure, fileless, and polymorphic DLL delivery.
 
 ## 🌸 The "Yan" Philosophy
@@ -17,8 +21,7 @@ The utility used to protect and prepare your DLLs for the loader.
 The core client that executes the injection.
 - **Phantom Streaming**: Receives data in fragments and writes directly to the target process.
 - **Kernel Sync**: Direct synchronization with `KUSER_SHARED_DATA` (0x7FFE0008).
-- **Hardware Entropy**: Ultra-fast title flickering driven by `__rdtsc`.
-- **Stealth UI**: Clean, branded console with a clickable Discord overlay.
+- **Branded UI**: Clean, magenta-on-black console with a clickable Discord overlay.
 
 ## 🚀 Getting Started
 
