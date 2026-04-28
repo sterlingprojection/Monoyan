@@ -71,6 +71,7 @@
     <ClInclude Include="src\injector.h" />
     <ClInclude Include="src\memory.h" />
     <ClInclude Include="src\mono_utils.h" />
+    <ClInclude Include="src\payload.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
