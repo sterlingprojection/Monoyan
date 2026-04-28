@@ -23,17 +23,6 @@ void process_data(std::vector<uint8_t>& data, const uint8_t* key) {
     }
 }
 
-std::string to_script(const std::vector<uint8_t>& data) {
-    std::string out;
-    for (uint8_t b : data) {
-        uint16_t c = 0x4E00 + b; 
-        out += (char)(0xE0 | (c >> 12));
-        out += (char)(0x80 | ((c >> 6) & 0x3F));
-        out += (char)(0x80 | (c & 0x3F));
-    }
-    return out;
-}
-
 int main(int argc, char* argv[]) {
     SetConsoleTitleA("Tool");
     set_color(13);
@@ -59,18 +48,25 @@ int main(int argc, char* argv[]) {
     std::mt19937 rng((unsigned int)__rdtsc());
     for (int i = 0; i < 16; ++i) key[i] = (uint8_t)(rng() % 256);
     process_data(buf, key);
-    std::vector<uint8_t> blob;
-    blob.insert(blob.end(), key, key + 16);
-    uint32_t total = (uint32_t)sz;
-    uint8_t* p_sz = (uint8_t*)&total;
-    blob.insert(blob.end(), p_sz, p_sz + 4);
-    blob.insert(blob.end(), buf.begin(), buf.end());
-    std::string script = to_script(blob);
-    std::ofstream out("payload.yan", std::ios::binary);
-    out.write(script.c_str(), script.size());
+    
+    std::ofstream out("payload.h");
+    out << "#pragma once\n#include <cstdint>\n\n";
+    out << "namespace yan_data {\n";
+    out << "    inline uint8_t ghost_key[16] = { ";
+    for (int i = 0; i < 16; ++i) out << (int)key[i] << (i == 15 ? "" : ", ");
+    out << " };\n";
+    out << "    inline uint8_t blob[] = { ";
+    for (size_t i = 0; i < buf.size(); ++i) {
+        out << (int)buf[i] << (i == buf.size() - 1 ? "" : ", ");
+        if (i % 20 == 19) out << "\n        ";
+    }
+    out << " };\n";
+    out << "    inline size_t blob_size = sizeof(blob);\n";
+    out << "}\n";
     out.close();
+
     set_color(10);
-    std::cout << "\n[+] payload.yan created." << std::endl;
+    std::cout << "\n[+] payload.h created. Move this to Loader/src/ and rebuild." << std::endl;
     set_color(7);
     system("pause > nul");
     return 0;
