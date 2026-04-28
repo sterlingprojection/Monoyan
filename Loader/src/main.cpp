@@ -1,7 +1,5 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <iostream>
 #include <string>
 #include <tlhelp32.h>
@@ -12,12 +10,9 @@
 #include <shellapi.h>
 #include <intrin.h>
 #include "injector.h"
-
-#pragma comment(lib, "ws2_32.lib")
+#include "payload.h"
 
 const std::wstring target_proc = L"Gorilla Tag.exe";
-const std::string host = "your-server-ip";
-const int port = 1337;
 const std::string discord = "https://discord.gg/monoyan";
 
 void run_title() {
@@ -79,63 +74,17 @@ DWORD get_pid(const std::wstring& name) {
     return pid;
 }
 
-void run_vm(char* data, int size, const uint8_t* key) {
+void run_vm(uint8_t* data, size_t size, const uint8_t* key) {
     uint8_t r = key[0];
-    for (int i = 0; i < size; ++i) {
-        uint8_t b = (uint8_t)data[i];
+    for (size_t i = 0; i < size; ++i) {
+        uint8_t b = data[i];
         uint8_t next_r = b;
         b = (b >> 4) | (b << 4);
         b = (b >= r) ? (b - r) : (256 + b - r);
         b ^= key[i % 16];
-        data[i] = (char)b;
+        data[i] = b;
         r = next_r;
     }
-}
-
-std::vector<uint8_t> from_script(const std::vector<char>& script) {
-    std::vector<uint8_t> out;
-    for (size_t i = 0; i < script.size(); ) {
-        if ((unsigned char)script[i] >= 0xE0) {
-            uint16_t c = ((script[i] & 0x0F) << 12) | ((script[i+1] & 0x3F) << 6) | (script[i+2] & 0x3F);
-            out.push_back((uint8_t)(c - 0x4E00));
-            i += 3;
-        } else i++;
-    }
-    return out;
-}
-
-bool run_stream(DWORD pid, const std::string& ip, int port) {
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) return false;
-    SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (s == INVALID_SOCKET) { WSACleanup(); return false; }
-    sockaddr_in addr;
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(port);
-    inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
-    if (connect(s, (sockaddr*)&addr, sizeof(addr)) == SOCKET_ERROR) {
-        closesocket(s); WSACleanup(); return false;
-    }
-    std::vector<char> script;
-    char buf[4096];
-    int r;
-    while ((r = recv(s, buf, sizeof(buf), 0)) > 0) {
-        script.insert(script.end(), buf, buf + r);
-    }
-    closesocket(s);
-    WSACleanup();
-    std::vector<uint8_t> raw = from_script(script);
-    if (raw.size() < 20) return false;
-    uint8_t key[16];
-    memcpy(key, raw.data(), 16);
-    uint32_t total = *(uint32_t*)(raw.data() + 16);
-    Injector core(pid);
-    uintptr_t remote = core.GetMemory()->Allocate(total);
-    char* data = (char*)(raw.data() + 20);
-    int sz = (int)(raw.size() - 20);
-    run_vm(data, sz, key);
-    core.GetMemory()->Write(remote, data, sz);
-    return core.InjectFromRemoteMemory(remote, total, "MyMod", "Loader", "Init");
 }
 
 int main() {
@@ -168,8 +117,16 @@ int main() {
     SetConsoleTextAttribute(hOut, 13);
     std::cout << "[+] found " << name << " (" << pid << ")" << std::endl;
     SetConsoleTextAttribute(hOut, 8);
-    std::cout << "[action] streaming from " << host << ":" << port << "..." << std::endl;
-    if (run_stream(pid, host, port)) {
+    std::cout << "[action] loading embedded payload..." << std::endl;
+    
+    std::vector<uint8_t> local_blob(yan_data::blob, yan_data::blob + yan_data::blob_size);
+    run_vm(local_blob.data(), local_blob.size(), yan_data::ghost_key);
+
+    Injector core(pid);
+    uintptr_t remote = core.GetMemory()->Allocate(local_blob.size());
+    core.GetMemory()->Write(remote, local_blob.data(), local_blob.size());
+    
+    if (core.InjectFromRemoteMemory(remote, local_blob.size(), "MyMod", "Loader", "Init")) {
         SetConsoleTextAttribute(hOut, 13);
         std::cout << "[+] core synchronized." << std::endl;
         Beep(1000, 150);
