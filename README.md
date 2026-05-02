@@ -1,9 +1,5 @@
 # Monoyan 🌸
 
-<p align="center">
-  <img src="https://cdn.discordapp.com/attachments/1498437660690354176/1498438151155355820/monoyan_logo_1.png?ex=69f128c6&is=69efd746&hm=d705a512ecae17a531d59dae586ae2712739c3defe94432203a0a718941340b7&" alt="Monoyan Logo" width="200"/>
-</p>
-
 **Monoyan** is a high-performance, kernel-synchronized C++ Mono Injector. This standalone edition allows you to embed your DLL directly into the loader for a seamless, one-click experience.
 
 ## 🌸 The "Yan" Philosophy
